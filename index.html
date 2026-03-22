@@ -651,6 +651,7 @@ function syncGlobalSideMenu() {
   let navLeft = document.getElementById('global-nav-left');
   let menu = document.getElementById('global-side-menu');
   let input = document.getElementById('global-upload-files');
+  let importInput = document.getElementById('global-import-file');
   if (!navLeft) {
     navLeft = document.createElement('div');
     navLeft.id = 'global-nav-left';
@@ -676,6 +677,7 @@ function syncGlobalSideMenu() {
     menu.innerHTML = `
       <button type="button" class="btn btn-ghost" id="menu-settings">Settings</button>
       <button type="button" class="btn btn-ghost" id="menu-backup">Save backup</button>
+      <button type="button" class="btn btn-ghost" id="menu-import">Import backup</button>
       <button type="button" class="btn btn-primary" id="menu-upload">Upload notes</button>
     `;
     document.body.appendChild(menu);
@@ -686,6 +688,9 @@ function syncGlobalSideMenu() {
     });
     document.getElementById('menu-backup')?.addEventListener('click', async () => {
       await saveBackupToChosenFile();
+    });
+    document.getElementById('menu-import')?.addEventListener('click', () => {
+      document.getElementById('global-import-file')?.click();
     });
     document.getElementById('menu-upload')?.addEventListener('click', () => {
       document.getElementById('global-upload-files')?.click();
@@ -710,6 +715,19 @@ function syncGlobalSideMenu() {
       render();
     });
     document.body.appendChild(input);
+  }
+  if (!importInput) {
+    importInput = document.createElement('input');
+    importInput.id = 'global-import-file';
+    importInput.type = 'file';
+    importInput.className = 'hidden-input';
+    importInput.accept = 'application/json,.json';
+    importInput.addEventListener('change', async e => {
+      const f = e.target.files?.[0];
+      if (f) await importJson(f);
+      e.target.value = '';
+    });
+    document.body.appendChild(importInput);
   }
 }
 
