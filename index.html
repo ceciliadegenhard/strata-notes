@@ -156,6 +156,10 @@ if (window.location.protocol === 'file:') {
 }
 const STORAGE_KEY = 'strata-notes-v1';
 const PDF_DB = 'strata-pdfs-v1';
+const SUPABASE_URL = 'https://ybznljwkatlufrdxujzb.supabase.co';
+const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Vo6gPuJ4Iz5js2iVB7cxLA_U3s7fHf3';
+const SUPABASE_NOTES_TABLE = 'strata_notes';
+const SUPABASE_PDF_BUCKET = 'strata_pdfs';
 
 function openPdfDb() {
   return new Promise((resolve, reject) => {
@@ -174,7 +178,7 @@ async function putPdf(noteId, blob) {
     tx.onerror = () => reject(tx.error);
   });
 }
-async function getPdf(noteId) {
+async function getLocalPdf(noteId) {
   const db = await openPdfDb();
   return new Promise((resolve, reject) => {
     const tx = db.transaction('pdfs', 'readonly');
@@ -191,6 +195,213 @@ async function deletePdf(noteId) {
     tx.oncomplete = () => resolve();
     tx.onerror = () => reject(tx.error);
   });
+}
+
+let supabaseClientPromise = null;
+let cloudSyncTimer = null;
+let cloudSyncInFlight = false;
+let cloudSyncQueued = false;
+let cloudBootstrapComplete = false;
+let cloudErrorNoticeShown = false;
+const cloudEnabled = Boolean(SUPABASE_URL && SUPABASE_PUBLISHABLE_KEY);
+
+function cloudSetupInstructions() {
+  return `Cloud sync setup needed in Supabase:
+1) Create table "${SUPABASE_NOTES_TABLE}" with columns:
+   id text primary key,
+   title text,
+   body text,
+   domain text,
+   class_name text,
+   era text,
+   location text,
+   subject text,
+   tags jsonb,
+   has_pdf boolean,
+   search_text text,
+   note_date date,
+   updated_at timestamptz,
+   pdf_path text
+2) Enable RLS on the table and add policies allowing select/insert/update/delete.
+3) Create public bucket "${SUPABASE_PDF_BUCKET}" and storage policies allowing select/insert/update/delete.`;
+}
+
+function showCloudErrorOnce(err) {
+  if (cloudErrorNoticeShown) return;
+  cloudErrorNoticeShown = true;
+  const msg = err?.message ? String(err.message) : String(err || 'Unknown cloud error');
+  alert(`Cloud sync is not ready yet.\n\n${msg}\n\n${cloudSetupInstructions()}`);
+}
+
+async function getSupabaseClient() {
+  if (!cloudEnabled) return null;
+  if (!supabaseClientPromise) {
+    supabaseClientPromise = (async () => {
+      const supabaseModule = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm');
+      return supabaseModule.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+        auth: {
+          persistSession: false,
+          autoRefreshToken: false,
+          detectSessionInUrl: false,
+        },
+      });
+    })();
+  }
+  return supabaseClientPromise;
+}
+
+function toCloudRow(note) {
+  return {
+    id: String(note.id),
+    title: String(note.title || ''),
+    body: String(note.body || ''),
+    domain: String(note.domain || 'general'),
+    class_name: String(note.class || ''),
+    era: String(note.era || ''),
+    location: String(note.location || ''),
+    subject: String(note.subject || ''),
+    tags: Array.isArray(note.tags) ? note.tags : [],
+    has_pdf: Boolean(note.hasPdf),
+    search_text: String(note.searchText || ''),
+    note_date: note.noteDate || null,
+    updated_at: note.updatedAt || new Date().toISOString(),
+    pdf_path: note.hasPdf ? `notes/${note.id}.pdf` : null,
+  };
+}
+
+function fromCloudRow(row) {
+  return migrateNote({
+    id: row.id,
+    title: row.title,
+    body: row.body,
+    domain: row.domain,
+    class: row.class_name,
+    era: row.era,
+    location: row.location,
+    subject: row.subject,
+    tags: Array.isArray(row.tags) ? row.tags : [],
+    hasPdf: Boolean(row.has_pdf),
+    searchText: row.search_text || '',
+    noteDate: row.note_date || '',
+    updatedAt: row.updated_at || new Date().toISOString(),
+  });
+}
+
+async function uploadPdfToCloud(noteId, blob) {
+  const supabase = await getSupabaseClient();
+  if (!supabase || !blob) return;
+  const path = `notes/${noteId}.pdf`;
+  const { error } = await supabase.storage
+    .from(SUPABASE_PDF_BUCKET)
+    .upload(path, blob, { upsert: true, contentType: 'application/pdf' });
+  if (error) throw error;
+}
+
+async function downloadPdfFromCloud(noteId) {
+  const supabase = await getSupabaseClient();
+  if (!supabase) return null;
+  const path = `notes/${noteId}.pdf`;
+  const { data, error } = await supabase.storage.from(SUPABASE_PDF_BUCKET).download(path);
+  if (error) return null;
+  return data || null;
+}
+
+async function deletePdfFromCloud(noteId) {
+  const supabase = await getSupabaseClient();
+  if (!supabase) return;
+  const path = `notes/${noteId}.pdf`;
+  await supabase.storage.from(SUPABASE_PDF_BUCKET).remove([path]);
+}
+
+async function getPdf(noteId) {
+  let blob = await getLocalPdf(noteId);
+  if (blob) return blob;
+  if (!cloudEnabled) return null;
+  try {
+    blob = await downloadPdfFromCloud(noteId);
+    if (blob) await putPdf(noteId, blob);
+    return blob;
+  } catch {
+    return null;
+  }
+}
+
+async function upsertNotesToCloud(noteList) {
+  const supabase = await getSupabaseClient();
+  if (!supabase) return;
+  const rows = noteList.map(toCloudRow);
+  const { error } = await supabase.from(SUPABASE_NOTES_TABLE).upsert(rows, { onConflict: 'id' });
+  if (error) throw error;
+}
+
+async function deleteNoteFromCloud(noteId) {
+  const supabase = await getSupabaseClient();
+  if (!supabase) return;
+  const { error } = await supabase.from(SUPABASE_NOTES_TABLE).delete().eq('id', noteId);
+  if (error) throw error;
+}
+
+async function syncCloudNow() {
+  if (!cloudEnabled) return;
+  if (cloudSyncInFlight) {
+    cloudSyncQueued = true;
+    return;
+  }
+  cloudSyncInFlight = true;
+  try {
+    await upsertNotesToCloud(notes);
+    for (const n of notes) {
+      if (!n.hasPdf) continue;
+      const localBlob = await getLocalPdf(n.id);
+      if (!localBlob) continue;
+      await uploadPdfToCloud(n.id, localBlob);
+    }
+  } catch (err) {
+    showCloudErrorOnce(err);
+  } finally {
+    cloudSyncInFlight = false;
+    if (cloudSyncQueued) {
+      cloudSyncQueued = false;
+      void syncCloudNow();
+    }
+  }
+}
+
+function scheduleCloudSync() {
+  if (!cloudEnabled || !cloudBootstrapComplete) return;
+  if (cloudSyncTimer) clearTimeout(cloudSyncTimer);
+  cloudSyncTimer = setTimeout(() => {
+    cloudSyncTimer = null;
+    void syncCloudNow();
+  }, 900);
+}
+
+async function bootstrapCloudNotes() {
+  if (!cloudEnabled || cloudBootstrapComplete) return;
+  try {
+    const supabase = await getSupabaseClient();
+    if (!supabase) return;
+    const { data, error } = await supabase.from(SUPABASE_NOTES_TABLE).select('*').order('updated_at', { ascending: false });
+    if (error) throw error;
+    if (Array.isArray(data) && data.length > 0) {
+      notes = data.map(fromCloudRow);
+      saveNotes(notes, { skipCloud: true });
+      selectedId = notes[0]?.id ?? null;
+      render();
+    } else if (notes.length > 0) {
+      await upsertNotesToCloud(notes);
+      for (const n of notes) {
+        if (!n.hasPdf) continue;
+        const localBlob = await getLocalPdf(n.id);
+        if (!localBlob) continue;
+        await uploadPdfToCloud(n.id, localBlob);
+      }
+    }
+  } catch (err) {
+    showCloudErrorOnce(err);
+  } finally {
+    cloudBootstrapComplete = true;
+  }
 }
 
 function uid() {
@@ -239,8 +450,9 @@ function formatTags(tags) {
   return Array.isArray(tags) ? tags.join(', ') : '';
 }
 
-function saveNotes(notes) {
+function saveNotes(notes, options = {}) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(notes));
+  if (!options.skipCloud) scheduleCloudSync();
 }
 
 let notes = loadNotes();
@@ -464,6 +676,8 @@ async function deleteNote(id) {
   notes = notes.filter(n => n.id !== id);
   saveNotes(notes);
   if (hadPdf) await deletePdf(id);
+  if (hadPdf) await deletePdfFromCloud(id).catch(() => {});
+  await deleteNoteFromCloud(id).catch(() => {});
   if (selectedId === id) selectedId = filteredNotes()[0]?.id ?? null;
 }
 
@@ -1258,6 +1472,7 @@ function render() {
 }
 
 render();
+void bootstrapCloudNotes();
 })();
   </script>
 </body>
