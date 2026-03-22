@@ -1,0 +1,1246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Strata — Notes</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400&display=swap" rel="stylesheet" />
+  <style>
+    :root{--bg:#f4f0e8;--surface:#fffcf5;--ink:#1c1914;--muted:#5c564c;--line:#d4ccc0;--history:#6b3a2a;--history-soft:rgba(107,58,42,.12);--geo:#2d4a5e;--geo-soft:rgba(45,74,94,.12);--general:#4a4a48;--general-soft:rgba(74,74,72,.1);--accent:#c45c26;--radius:10px;--shadow:0 1px 2px rgba(28,25,20,.06),0 8px 24px rgba(28,25,20,.06);font-family:'DM Sans',system-ui,sans-serif;color:var(--ink);background:var(--bg);line-height:1.5}
+    *,*::before,*::after{box-sizing:border-box}
+    body{margin:0;min-height:100vh}
+    #app{min-height:100vh}
+    .app-shell{display:grid;grid-template-columns:minmax(260px,320px) 1fr;min-height:100vh}
+    @media(max-width:880px){.app-shell{grid-template-columns:1fr}}
+    .sidebar{background:linear-gradient(180deg,#ebe4d6 0%,#e5dcc8 48%,#dfd4bc 100%);border-right:1px solid var(--line);padding:1.25rem 1rem 2rem;display:flex;flex-direction:column;gap:1rem}
+    .brand{padding:.25rem .5rem .75rem}
+    .brand h1{font-family:'Fraunces',Georgia,serif;font-size:1.35rem;font-weight:600;margin:0 0 .25rem;letter-spacing:-.02em}
+    .brand p{margin:0;font-size:.8rem;color:var(--muted);max-width:22ch}
+    .strata-strip{display:flex;height:6px;border-radius:4px;overflow:hidden;margin-top:.75rem;box-shadow:inset 0 1px 0 rgba(255,255,255,.35)}
+    .strata-strip span{flex:1}
+    .strata-strip .s1{background:#8b5a45}
+    .strata-strip .s2{background:#c4a574}
+    .strata-strip .s3{background:#6b8f7a}
+    .strata-strip .s4{background:#5a7a9e}
+    .strata-strip .s5{background:#4a5560}
+    .search-wrap{position:relative}
+    .search-wrap input{width:100%;padding:.55rem .65rem .55rem 2rem;border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);font:inherit;font-size:.9rem}
+    .search-wrap input:focus{outline:2px solid rgba(196,92,38,.35);outline-offset:0}
+    .search-wrap::before{content:'';position:absolute;left:.65rem;top:50%;width:14px;height:14px;margin-top:-7px;border:2px solid var(--muted);border-radius:50%;opacity:.45;pointer-events:none}
+    .search-wrap::after{content:'';position:absolute;left:1.35rem;top:50%;width:6px;height:2px;margin-top:2px;background:var(--muted);opacity:.45;transform:rotate(45deg);pointer-events:none}
+    .filter-label{font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:.25rem 0 .35rem}
+    .domain-filters{display:flex;flex-wrap:wrap;gap:.35rem}
+    .domain-filters button{border:1px solid transparent;background:var(--surface);padding:.35rem .55rem;border-radius:999px;font:inherit;font-size:.8rem;cursor:pointer;color:var(--muted)}
+    .domain-filters button:hover{border-color:var(--line);color:var(--ink)}
+    .domain-filters button.active{color:var(--ink);font-weight:600}
+    .domain-filters button[data-domain='all'].active{background:var(--surface);border-color:var(--ink)}
+    .domain-filters button[data-domain='history'].active{background:var(--history-soft);color:var(--history);border-color:rgba(107,58,42,.35)}
+    .domain-filters button[data-domain='geoscience'].active{background:var(--geo-soft);color:var(--geo);border-color:rgba(45,74,94,.35)}
+    .domain-filters button[data-domain='general'].active{background:var(--general-soft);border-color:rgba(74,74,72,.3)}
+    .filter-input{width:100%;padding:.45rem .5rem;border:1px solid var(--line);border-radius:6px;background:var(--surface);font:inherit;font-size:.82rem}
+    .filter-input:focus{outline:2px solid rgba(196,92,38,.25);outline-offset:0}
+    .note-list .meta .preview{opacity:.8}
+    .sidebar-actions{display:flex;flex-direction:column;gap:.35rem;margin-top:auto;padding-top:1rem}
+    .btn{display:inline-flex;align-items:center;justify-content:center;gap:.35rem;padding:.55rem .85rem;border-radius:var(--radius);font:inherit;font-size:.88rem;font-weight:600;cursor:pointer;border:1px solid transparent}
+    .btn-primary{background:var(--accent);color:#fff;border-color:#a84d20}
+    .btn-primary:hover{filter:brightness(1.05)}
+    .btn-ghost{background:var(--surface);border-color:var(--line);color:var(--ink)}
+    .btn-ghost:hover{border-color:var(--muted)}
+    .note-list{list-style:none;margin:0;padding:0;flex:1;min-height:120px;overflow-y:auto;display:flex;flex-direction:column;gap:.35rem}
+    .note-list li button{width:100%;text-align:left;padding:.6rem .65rem;border:1px solid transparent;border-radius:var(--radius);background:rgba(255,252,245,.65);cursor:pointer;font:inherit}
+    .note-list li button:hover{border-color:var(--line);background:var(--surface)}
+    .note-list li button.active{border-color:rgba(196,92,38,.45);background:var(--surface);box-shadow:var(--shadow)}
+    .note-list .title{display:block;font-weight:600;font-size:.9rem;color:var(--ink);line-height:1.3}
+    .note-list .meta{display:flex;align-items:center;gap:.35rem;margin-top:.2rem;font-size:.72rem;color:var(--muted)}
+    .badge{display:inline-block;padding:.1rem .4rem;border-radius:4px;font-size:.65rem;font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+    .badge.history{background:var(--history-soft);color:var(--history)}
+    .badge.geoscience{background:var(--geo-soft);color:var(--geo)}
+    .badge.general{background:var(--general-soft);color:var(--general)}
+    .main{background:var(--bg);padding:1.25rem 1.25rem 2rem;max-width:900px}
+    @media(min-width:881px){.main{padding:1.75rem 2.5rem 3rem}}
+    .empty-state{padding:2rem 0;color:var(--muted);font-size:.95rem}
+    .editor-header{display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:.75rem;margin-bottom:1rem}
+    .title-input{width:100%;font-family:'Fraunces',Georgia,serif;font-size:1.5rem;font-weight:600;border:none;border-bottom:1px solid transparent;background:transparent;padding:.15rem 0;margin:0;color:var(--ink)}
+    .title-input:focus{outline:none;border-bottom-color:var(--accent)}
+    .title-input::placeholder{color:#a39a8c}
+    .editor-actions{display:flex;flex-wrap:wrap;gap:.4rem}
+    .editor-actions .btn{padding:.4rem .65rem;font-size:.82rem}
+    .btn-danger{background:transparent;border-color:#c45c5c;color:#9a3535}
+    .btn-danger:hover{background:rgba(196,92,92,.08)}
+    .meta-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:.75rem;margin-bottom:1rem}
+    .field-tags{grid-column:1/-1}
+    .tag-chip{display:inline-block;padding:.15rem .4rem;margin:0 .2rem .2rem 0;border-radius:4px;background:rgba(196,92,38,.12);color:var(--accent);font-size:.7rem;font-weight:500}
+    .tags-inline{display:inline-flex;flex-wrap:wrap;gap:.15rem;align-items:center}
+    .field label{display:block;font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:.25rem}
+    .field select,.field input{width:100%;padding:.45rem .5rem;border:1px solid var(--line);border-radius:6px;background:var(--surface);font:inherit;font-size:.88rem}
+    .field input:focus,.field select:focus,.body-input:focus{outline:2px solid rgba(196,92,38,.25);outline-offset:0}
+    .title-input[readonly],.body-input[readonly],.meta-grid input[readonly],.meta-grid select:disabled{background:transparent;border-color:transparent;color:inherit;cursor:default;opacity:1}
+    .body-input{width:100%;min-height:min(52vh,420px);padding:1rem;border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);font:inherit;font-size:.95rem;line-height:1.65;resize:vertical}
+    .saved-hint{font-size:.78rem;color:var(--muted);margin-top:.5rem}
+    .hidden-input{position:absolute;width:0;height:0;opacity:0;pointer-events:none}
+    .brand-clickable{cursor:pointer}.brand-clickable:hover{opacity:.85}
+    .start-screen{position:relative;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem;background:var(--bg)}
+    .history-classes-screen{justify-content:flex-start;padding-top:2rem}
+    .start-brand{text-align:center;margin-bottom:2.5rem}.start-brand h1{font-family:'Fraunces',Georgia,serif;font-size:2.25rem;font-weight:600;margin:0 0 .5rem;letter-spacing:-.02em}
+    .start-brand p{margin:0;font-size:1rem;color:var(--muted)}
+    .start-prompt{font-size:.9rem;color:var(--muted);margin:0 0 1rem;text-transform:uppercase;letter-spacing:.1em}
+    .start-upload{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:.5rem;margin-bottom:1.5rem}.start-upload-hint{font-size:.8rem;color:var(--muted)}
+    .start-global-search{width:min(760px,100%);margin:0 auto 1.25rem}
+    #start-global-search{text-align:center}
+    .start-global-results{margin-top:.6rem;display:flex;flex-direction:column;gap:.4rem}
+    .start-result{width:100%;text-align:left;border:1px solid var(--line);border-radius:8px;background:var(--surface);padding:.55rem .65rem;cursor:pointer;font:inherit}
+    .start-result:hover{border-color:var(--accent);box-shadow:0 2px 8px rgba(196,92,38,.15)}
+    .start-result-title{display:block;font-weight:600}
+    .start-result-meta{display:block;font-size:.8rem;color:var(--muted);margin-top:.15rem}
+    .start-choices{display:flex;flex-wrap:wrap;gap:1rem;justify-content:center}
+    .start-card{display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:200px;padding:2rem 2.5rem;border:2px solid var(--line);border-radius:var(--radius);background:var(--surface);cursor:pointer;font:inherit;transition:border-color .2s,box-shadow .2s,transform .15s}
+    .start-card:hover{border-color:var(--muted);box-shadow:var(--shadow);transform:translateY(-2px)}
+    .start-card-history:hover,.start-card-history:focus{border-color:var(--history);box-shadow:0 4px 20px var(--history-soft)}
+    .start-card-geo:hover,.start-card-geo:focus{border-color:var(--geo);box-shadow:0 4px 20px var(--geo-soft)}
+    .start-card-title{font-family:'Fraunces',Georgia,serif;font-size:1.5rem;font-weight:600;color:var(--ink)}
+    .start-card-history .start-card-title{color:var(--history)}.start-card-geo .start-card-title{color:var(--geo)}
+    .start-card-desc{font-size:.8rem;color:var(--muted);margin-top:.35rem}
+    .pick-form{display:flex;flex-direction:column;align-items:center;gap:1rem;width:100%;max-width:320px}
+    .pick-field{width:100%;text-align:left}.pick-field label{display:block;font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:.35rem}
+    .pick-field input{width:100%;padding:.6rem .75rem;border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);font:inherit;font-size:.95rem}
+    .pick-field input:focus{outline:2px solid rgba(196,92,38,.25);outline-offset:0}
+    .pick-actions{display:flex;flex-wrap:wrap;gap:.5rem;justify-content:center;margin-top:.5rem}
+    .start-card-misc .start-card-title{color:var(--general)}.start-card-misc:hover,.start-card-misc:focus{border-color:var(--general);box-shadow:0 4px 20px var(--general-soft)}
+    .pick-form-class{max-width:420px}.pick-search{width:100%;padding:.65rem .85rem;border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);font:inherit;font-size:1rem}.pick-search:focus{outline:2px solid rgba(196,92,38,.25);outline-offset:0}
+    .class-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:.6rem;justify-content:stretch;min-height:80px;padding:1rem 0;width:100%}
+    .class-chip{display:block;width:100%;padding:.55rem .85rem;border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);font:inherit;font-size:.88rem;cursor:pointer;transition:border-color .15s,box-shadow .15s;text-align:left}.class-chip:hover{border-color:var(--accent);box-shadow:0 2px 8px rgba(196,92,38,.15)}
+    .class-title{display:block;font-weight:600;line-height:1.25;text-align:center}
+    .class-code{display:block;font-size:.75rem;color:var(--muted);line-height:1.2;margin-top:.15rem;text-align:center;text-transform:uppercase}
+    .class-year{display:block;font-size:.72rem;color:var(--muted);line-height:1.2;margin-top:.12rem;text-align:center}
+    .class-chip-wrap{display:flex;align-items:stretch;width:100%}.class-chip-wrap .class-chip{border-top-right-radius:0;border-bottom-right-radius:0;margin-right:0}.class-chip-delete{display:inline-flex;align-items:center;justify-content:center;min-width:1.5rem;padding:0 .35rem;border:1px solid var(--line);border-left:none;border-radius:0 var(--radius) var(--radius) 0;background:var(--surface);font:inherit;font-size:1.1rem;line-height:1;cursor:pointer;color:var(--muted);transition:color .15s,background .15s}.class-chip-delete:hover{color:#c45c5c;background:rgba(196,92,92,.08)}
+    .pick-form-class .pick-field{width:100%}.empty-pick{color:var(--muted);font-size:.9rem;margin:0}
+    .add-class-row{margin-top:.5rem}.pick-field-label{font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:.35rem}.add-class-inner{display:flex;gap:.5rem;align-items:center}.add-class-inner input{flex:1}
+    .settings-form{max-width:760px;width:100%;text-align:left}.settings-section{margin-bottom:2rem}.settings-section-title{font-size:1rem;font-weight:600;margin:0 0 .75rem;color:var(--ink)}.settings-class-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:.5rem;min-height:2.5rem;margin-bottom:.75rem}.class-chip-settings{cursor:default}
+    .upload-preview-form{max-width:480px;width:100%}.upload-preview-row{display:flex;flex-direction:column;gap:.25rem;margin-bottom:.75rem;text-align:left}.upload-preview-filename{font-size:.8rem;color:var(--muted)}
+    .class-grid-screen{justify-content:flex-start;padding-top:2rem}
+    .class-grid-head{text-align:center;margin-bottom:1rem}
+    .class-grid-actions{display:flex;gap:.5rem;justify-content:center;flex-wrap:wrap;margin-bottom:1rem}
+    .pdf-grid{width:min(100%,1100px);display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:1rem}
+    .pdf-card{display:flex;flex-direction:column;gap:.5rem;padding:.55rem;border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);cursor:pointer;text-align:left;font:inherit;color:inherit}
+    .pdf-card:hover{border-color:var(--accent);box-shadow:0 2px 8px rgba(196,92,38,.15)}
+    .pdf-card-preview{height:220px;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:#fff;display:flex;align-items:center;justify-content:center}
+    .pdf-card-preview .pdf-loading{padding:.5rem;font-size:.82rem}
+    .pdf-card-embed{width:100%;height:100%;border:0}
+    .pdf-card-title{display:block;font-weight:600}
+    .pdf-card-date{display:block;font-size:.78rem;color:var(--muted)}
+    .note-detail-screen{justify-content:flex-start;padding-top:2rem}
+    .note-detail-wrap{width:min(100%,980px)}
+    .pdf-viewer-wrap{width:100%;min-height:min(60vh,600px);border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);overflow:hidden}
+    .global-side-menu{position:fixed;top:1rem;right:1rem;z-index:1000;display:flex;flex-direction:column;gap:.45rem;padding:.6rem;border:1px solid var(--line);border-radius:12px;background:rgba(255,252,245,.96);box-shadow:var(--shadow)}
+    .global-side-menu .btn{justify-content:flex-start;min-width:140px}
+    .global-nav-left{position:fixed;top:1rem;left:1rem;z-index:1000;display:flex;flex-direction:column;align-items:flex-start;gap:.4rem}
+    .nav-back-btn{width:2.2rem;height:2.2rem;padding:0;display:inline-flex;align-items:center;justify-content:center;font-size:1.2rem}
+    .menu-logo-btn{display:block;text-align:center;padding:.5rem .85rem;border:1px solid var(--line);border-radius:10px;background:var(--surface);font:inherit;cursor:pointer;box-shadow:var(--shadow)}
+    .menu-logo-btn:hover{border-color:var(--line)}
+    .menu-logo-title{display:block;font-family:'Fraunces',Georgia,serif;font-size:1.25rem;font-weight:600;color:var(--ink);line-height:1.1}
+    .menu-logo-sub{display:block;font-size:.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-top:.15rem}
+    .pdf-loading{padding:2rem;text-align:center;color:var(--muted)}.pdf-embed{width:100%;height:min(70vh,700px);display:block}
+  </style>
+</head>
+<body>
+  <div id="file-protocol-warning" style="display:none;position:fixed;top:0;left:0;right:0;background:#c45c26;color:#fff;padding:0.75rem 1rem;font-size:0.9rem;text-align:center;z-index:9999;box-shadow:0 2px 8px rgba(0,0,0,.2)">
+    <strong>Upload won't work when opened from Desktop.</strong> Run in Terminal: <code style="background:rgba(0,0,0,.2);padding:0.2em 0.4em;border-radius:4px">cd ~/Desktop && python3 -m http.server 8080</code> then open <a href="http://localhost:8080/strata-notes.html" style="color:#fff;text-decoration:underline">http://localhost:8080/strata-notes.html</a> in your browser.
+  </div>
+  <div id="app"></div>
+  <script>
+(function() {
+if (window.location.protocol === 'file:') {
+  document.getElementById('file-protocol-warning').style.display = 'block';
+}
+const STORAGE_KEY = 'strata-notes-v1';
+const PDF_DB = 'strata-pdfs-v1';
+
+function openPdfDb() {
+  return new Promise((resolve, reject) => {
+    const r = indexedDB.open(PDF_DB, 1);
+    r.onerror = () => reject(r.error);
+    r.onsuccess = () => resolve(r.result);
+    r.onupgradeneeded = e => e.target.result.createObjectStore('pdfs', { keyPath: 'id' });
+  });
+}
+async function putPdf(noteId, blob) {
+  const db = await openPdfDb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('pdfs', 'readwrite');
+    tx.objectStore('pdfs').put({ id: noteId, blob });
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+async function getPdf(noteId) {
+  const db = await openPdfDb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('pdfs', 'readonly');
+    const r = tx.objectStore('pdfs').get(noteId);
+    r.onsuccess = () => resolve(r.result?.blob ?? null);
+    r.onerror = () => reject(tx.error);
+  });
+}
+async function deletePdf(noteId) {
+  const db = await openPdfDb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('pdfs', 'readwrite');
+    tx.objectStore('pdfs').delete(noteId);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+function uid() {
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 9)}`;
+}
+
+function loadNotes() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return [];
+    const data = JSON.parse(raw);
+    if (!Array.isArray(data)) return [];
+    return data.map(migrateNote);
+  } catch {
+    return [];
+  }
+}
+
+function migrateNote(n) {
+  const legacy = typeof n.context === 'string' ? n.context : '';
+  const updated = typeof n.updatedAt === 'string' ? n.updatedAt : new Date().toISOString();
+  const defaultDate = updated.slice(0, 10);
+  return {
+    ...n,
+    id: String(n.id ?? uid()),
+    title: String(n.title ?? ''),
+    body: String(n.body ?? ''),
+    domain: ['history', 'geoscience', 'general'].includes(String(n.domain)) ? n.domain : 'general',
+    class: typeof n.class === 'string' ? n.class : '',
+    era: typeof n.era === 'string' ? n.era : (n.domain === 'history' ? legacy : ''),
+    location: typeof n.location === 'string' ? n.location : '',
+    subject: typeof n.subject === 'string' ? n.subject : (n.domain === 'geoscience' ? legacy : ''),
+    tags: Array.isArray(n.tags) ? n.tags.filter(t => typeof t === 'string').map(t => t.trim()).filter(Boolean) : [],
+    hasPdf: Boolean(n.hasPdf),
+    searchText: typeof n.searchText === 'string' ? n.searchText : '',
+    noteDate: typeof n.noteDate === 'string' ? n.noteDate : defaultDate,
+    updatedAt: updated,
+  };
+}
+
+function parseTags(s) {
+  return (s || '').split(/[,;]+/).map(t => t.trim()).filter(Boolean);
+}
+
+function formatTags(tags) {
+  return Array.isArray(tags) ? tags.join(', ') : '';
+}
+
+function saveNotes(notes) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(notes));
+}
+
+let notes = loadNotes();
+let filterDomain = 'all';
+let filterClass = '';
+let filterEra = '';
+let filterLocation = '';
+let filterSubject = '';
+let filterNoteDate = '';
+let searchQuery = '';
+let selectedId = notes[0]?.id ?? null;
+let saveFlash = false;
+let view = 'start';
+let lastPdfObjectUrl = null;
+let pendingUploadFiles = [];
+let editorEditing = false;
+let settingsFromView = 'start';
+let pendingUploadFromView = null;
+let classGridObjectUrls = [];
+function classPickViewForDomain(d) {
+  if (d === 'history') return 'history-pick';
+  if (d === 'geoscience') return 'geo-pick';
+  if (d === 'general') return 'misc-pick';
+  return 'start';
+}
+function goBackByHierarchy() {
+  if (view === 'start') return;
+  if (view === 'note-detail') {
+    if (filterDomain === 'history' || filterDomain === 'geoscience' || filterDomain === 'general') {
+      view = 'class-grid';
+    } else {
+      view = 'start';
+    }
+    return;
+  }
+  if (view === 'class-grid') {
+    view = classPickViewForDomain(filterDomain);
+    return;
+  }
+  if (view === 'history-pick' || view === 'geo-pick' || view === 'misc-pick') {
+    view = 'start';
+    return;
+  }
+  if (view === 'settings') {
+    view = settingsFromView || 'start';
+    return;
+  }
+  if (view === 'upload-preview') {
+    view = pendingUploadFromView || 'start';
+    return;
+  }
+  if (view === 'app') {
+    view = classPickViewForDomain(filterDomain);
+    return;
+  }
+  view = 'start';
+}
+
+function parseEraYear(era) {
+  const m = String(era || '').match(/\b(1[0-9]{3}|2[0-9]{3})\b/);
+  return m ? parseInt(m[1], 10) : 9999;
+}
+function parseNoteDateValue(note) {
+  const v = String(note?.noteDate || '');
+  return /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : '9999-12-31';
+}
+
+function sortNotes(list) {
+  return [...list].sort((a, b) => {
+    if (filterDomain === 'history') {
+      const dateA = parseNoteDateValue(a);
+      const dateB = parseNoteDateValue(b);
+      if (dateA !== dateB) return dateA.localeCompare(dateB);
+      const eraA = parseEraYear(a.era);
+      const eraB = parseEraYear(b.era);
+      if (eraA !== eraB) return eraA - eraB;
+      const loc = (a.location || '').localeCompare(b.location || '', undefined, { sensitivity: 'base' });
+      if (loc !== 0) return loc;
+      return (a.class || '').localeCompare(b.class || '', undefined, { sensitivity: 'base' });
+    }
+    if (filterDomain === 'geoscience') {
+      const sub = (a.subject || '').localeCompare(b.subject || '', undefined, { sensitivity: 'base' });
+      if (sub !== 0) return sub;
+      return (a.class || '').localeCompare(b.class || '', undefined, { sensitivity: 'base' });
+    }
+    const classCmp = (a.class || '').localeCompare(b.class || '', undefined, { sensitivity: 'base' });
+    if (classCmp !== 0) return classCmp;
+    return new Date(b.updatedAt) - new Date(a.updatedAt);
+  });
+}
+
+function filteredNotes() {
+  let list = notes;
+  if (filterDomain !== 'all') list = list.filter(n => n.domain === filterDomain);
+  if (filterClass) list = list.filter(n => (n.class || '').toLowerCase().includes(filterClass.toLowerCase()));
+  if (filterDomain === 'history' && filterEra) list = list.filter(n => (n.era || '').toLowerCase().includes(filterEra.toLowerCase()));
+  if (filterDomain === 'history' && filterLocation) list = list.filter(n => (n.location || '').toLowerCase().includes(filterLocation.toLowerCase()));
+  if (filterDomain === 'geoscience' && filterSubject) list = list.filter(n => (n.subject || '').toLowerCase().includes(filterSubject.toLowerCase()));
+  if (filterNoteDate) list = list.filter(n => (n.noteDate || '') === filterNoteDate);
+  const q = searchQuery.trim().toLowerCase();
+  if (q) list = list.filter(n => { const tagsStr = (n.tags || []).join(' '); const body = n.searchText || n.body || ''; return `${n.title}\n${body}\n${n.class}\n${n.era}\n${n.location}\n${n.subject}\n${tagsStr}`.toLowerCase().includes(q); });
+  return sortNotes(list);
+}
+function globalSearchNotes(q) {
+  const query = String(q || '').trim().toLowerCase();
+  if (!query) return [];
+  const domainLabel = { history: 'History', geoscience: 'Geoscience', general: 'Misc' };
+  return [...notes]
+    .filter(n => {
+      const tagsStr = (n.tags || []).join(' ');
+      const body = n.searchText || n.body || '';
+      const hay = `${n.title}\n${body}\n${n.class}\n${n.era}\n${n.location}\n${n.subject}\n${n.noteDate}\n${tagsStr}\n${domainLabel[n.domain] || ''}`.toLowerCase();
+      return hay.includes(query);
+    })
+    .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+}
+
+const DEFAULT_CLASSES = { history: ['Issues in European History II (HIS 1120)'], geoscience: ['Earth Revealed (GEO 1600)'], general: [] };
+const CUSTOM_CLASSES_KEY = 'strata-custom-classes-v1';
+function loadCustomClasses() {
+  try {
+    const raw = localStorage.getItem(CUSTOM_CLASSES_KEY);
+    if (!raw) return { history: [], geoscience: [], general: [] };
+    const data = JSON.parse(raw);
+    return { history: data.history || [], geoscience: data.geoscience || [], general: data.general || [] };
+  } catch { return { history: [], geoscience: [], general: [] }; }
+}
+function buildClassLabel(name, code, emoji, year) {
+  const n = String(name || '').trim();
+  const c = String(code || '').trim();
+  if (!n) return '';
+  const e = String(emoji || '').trim();
+  const y = String(year || '').trim();
+  const base = c ? `${n} (${c.toUpperCase()})` : n;
+  const withEmoji = e ? `${e} ${base}` : base;
+  return y ? `${withEmoji} [${y}]` : withEmoji;
+}
+function splitClassLabel(label) {
+  const raw = String(label || '').trim();
+  const emojiMatch = raw.match(/^(\p{Extended_Pictographic}(?:\uFE0F)?)(?:\s+)?(.*)$/u);
+  const emoji = emojiMatch ? emojiMatch[1] : '';
+  const rest = (emojiMatch ? emojiMatch[2] : raw).trim();
+  const yearMatch = rest.match(/\[([^\]]+)\]\s*$/);
+  const year = (yearMatch?.[1] || '').trim();
+  const restWithoutYear = (yearMatch ? rest.slice(0, yearMatch.index) : rest).trim();
+  const m = restWithoutYear.match(/^(.*?)(?:\s*\(([^()]+)\))?$/);
+  const name = (m?.[1] || restWithoutYear).trim();
+  const code = (m?.[2] || '').trim();
+  return { emoji, name: name || restWithoutYear, code, year };
+}
+function classLabelHtml(label) {
+  const parts = splitClassLabel(label);
+  return `<span class="class-title">${parts.emoji ? `${escapeHtml(parts.emoji)} ` : ''}${escapeHtml(parts.name)}</span>${parts.code ? `<span class="class-code">${escapeHtml(parts.code)}</span>` : ''}${parts.year ? `<span class="class-year">${escapeHtml(parts.year)}</span>` : ''}`;
+}
+function classLabelKey(label) {
+  const p = splitClassLabel(label);
+  return `${String(p.emoji || '').toLowerCase()}|${String(p.name || '').toLowerCase()}|${String(p.code || '').toUpperCase()}|${String(p.year || '').toLowerCase()}`;
+}
+function addCustomClass(domain, name) {
+  const custom = loadCustomClasses();
+  const trimmed = String(name || '').trim();
+  if (!trimmed) return;
+  const arr = custom[domain] || [];
+  if (!arr.includes(trimmed)) { arr.push(trimmed); arr.sort((a, b) => a.localeCompare(b)); custom[domain] = arr; localStorage.setItem(CUSTOM_CLASSES_KEY, JSON.stringify(custom)); }
+}
+function removeCustomClass(domain, name) {
+  const custom = loadCustomClasses();
+  const arr = (custom[domain] || []).filter(c => c !== name);
+  custom[domain] = arr;
+  localStorage.setItem(CUSTOM_CLASSES_KEY, JSON.stringify(custom));
+}
+function uniqueValues(key, domain = 'all') {
+  const seen = new Set();
+  notes.forEach(n => {
+    if (domain !== 'all' && n.domain !== domain) return;
+    const v = (n[key] || '').trim();
+    if (v) seen.add(v);
+  });
+  return [...seen].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+}
+
+function allTags() {
+  const seen = new Set();
+  notes.forEach(n => (n.tags || []).forEach(t => t && seen.add(t)));
+  return [...seen].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+}
+
+function classesForDomain(domain) {
+  const fromNotes = uniqueValues('class', domain);
+  const defaults = DEFAULT_CLASSES[domain] || [];
+  const custom = loadCustomClasses()[domain] || [];
+  const merged = [...defaults, ...custom, ...fromNotes];
+  const deduped = new Map();
+  merged.forEach((c) => {
+    const v = String(c || '').trim();
+    if (!v) return;
+    const key = classLabelKey(v);
+    if (!deduped.has(key)) deduped.set(key, v);
+  });
+  return [...deduped.values()].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+}
+
+function selectedNote() {
+  return notes.find(n => n.id === selectedId) ?? null;
+}
+
+function upsertNote(patch) {
+  const i = notes.findIndex(n => n.id === patch.id);
+  const now = new Date().toISOString();
+  const defaults = { class: '', era: '', location: '', subject: '', tags: [], noteDate: '' };
+  if (i === -1) {
+    notes.push({ id: patch.id, title: patch.title ?? 'Untitled', body: patch.body ?? '', domain: patch.domain ?? 'general', ...defaults, ...patch, updatedAt: now });
+  } else {
+    notes[i] = { ...notes[i], ...patch, updatedAt: now };
+  }
+  saveNotes(notes);
+}
+
+async function deleteNote(id) {
+  const hadPdf = notes.find(n => n.id === id)?.hasPdf;
+  notes = notes.filter(n => n.id !== id);
+  saveNotes(notes);
+  if (hadPdf) await deletePdf(id);
+  if (selectedId === id) selectedId = filteredNotes()[0]?.id ?? null;
+}
+
+async function buildExportPayload() {
+  const toExport = await Promise.all(notes.map(async n => {
+    const out = { ...n };
+    if (n.hasPdf) {
+      const pdfBlob = await getPdf(n.id);
+      if (pdfBlob) out.pdfBase64 = await new Promise((resolve, reject) => { const r = new FileReader(); r.onload = () => resolve(String(r.result).split(',')[1]); r.onerror = reject; r.readAsDataURL(pdfBlob); });
+    }
+    return out;
+  }));
+  return JSON.stringify(toExport, null, 2);
+}
+
+async function exportJson(filenamePrefix = 'strata-notes') {
+  const payload = await buildExportPayload();
+  const blob = new Blob([payload], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `${filenamePrefix}-${new Date().toISOString().slice(0, 10)}.json`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+async function saveBackupToChosenFile() {
+  const filename = `strata-notes-backup-${new Date().toISOString().slice(0, 10)}.json`;
+  const payload = await buildExportPayload();
+  const blob = new Blob([payload], { type: 'application/json' });
+  if (!window.showSaveFilePicker) {
+    await exportJson('strata-notes-backup');
+    alert('Your browser saved to Downloads. To save directly on Desktop, use Chrome and allow file picker access.');
+    return;
+  }
+  try {
+    const handle = await window.showSaveFilePicker({
+      suggestedName: filename,
+      types: [{ description: 'JSON backup', accept: { 'application/json': ['.json'] } }],
+    });
+    const writable = await handle.createWritable();
+    await writable.write(blob);
+    await writable.close();
+    alert('Backup saved.');
+  } catch (err) {
+    if (err?.name !== 'AbortError') {
+      alert('Could not save backup file.');
+    }
+  }
+}
+
+async function importJson(file) {
+  const raw = await new Promise((resolve, reject) => { const r = new FileReader(); r.onload = () => resolve(String(r.result)); r.onerror = reject; r.readAsText(file); });
+  try {
+    const data = JSON.parse(raw);
+    if (!Array.isArray(data)) throw new Error('Invalid file');
+    const valid = data.every(x => x && typeof x === 'object' && (typeof x.title === 'string' || x.title == null));
+    if (!valid) throw new Error('Invalid file');
+    notes = [];
+    for (const n of data) {
+      const migrated = migrateNote(n);
+      const pdfBase64 = n.pdfBase64;
+      if (pdfBase64 && typeof pdfBase64 === 'string') {
+        const bin = atob(pdfBase64);
+        const bytes = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+        await putPdf(migrated.id, new Blob([bytes], { type: 'application/pdf' }));
+      }
+      delete migrated.pdfBase64;
+      notes.push(migrated);
+    }
+    saveNotes(notes);
+    selectedId = notes[0]?.id ?? null;
+    render();
+  } catch {
+    alert('Could not import that file. Use a JSON export from Strata.');
+  }
+}
+
+let pdfjsLibPromise = null;
+async function getPdfJs() {
+  if (!pdfjsLibPromise) {
+    pdfjsLibPromise = (async () => {
+      const lib = await import('https://mozilla.github.io/pdf.js/build/pdf.mjs');
+      lib.GlobalWorkerOptions.workerSrc = 'https://mozilla.github.io/pdf.js/build/pdf.worker.mjs';
+      return lib;
+    })();
+  }
+  return pdfjsLibPromise;
+}
+async function extractTextFromPdf(file) {
+  const pdfjsLib = await getPdfJs();
+  const arrayBuffer = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
+  let fullText = '';
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i);
+    const textContent = await page.getTextContent();
+    fullText += textContent.items.map(item => item.str).join(' ') + '\n\n';
+  }
+  return fullText.trim();
+}
+const STOP_WORDS = new Set('a an and are as at be but by for from has he her his if in is it not of on or that the they to was were will with'.split(' '));
+function extractTagsFromText(text, maxTags = 8) {
+  const words = text.toLowerCase().replace(/[^\w\s'-]/g,' ').split(/\s+/).filter(w=>w.length>=3&&w.length<=40&&!/^\d+$/.test(w)&&!STOP_WORDS.has(w));
+  const count = new Map();
+  words.forEach(w=>count.set(w,(count.get(w)||0)+1));
+  return [...count.entries()].sort((a,b)=>b[1]-a[1]).slice(0,maxTags).map(([w])=>w.replace(/^['"-]+|['"-]+$/g,'')).filter(w=>w.length>=3);
+}
+async function importFromFiles(files, customTitles) {
+  if (!files?.length) return;
+  const domain = (pendingUploadFromView || view) === 'app' ? filterDomain : filterDomain !== 'all' ? filterDomain : 'general';
+  const targetClass = filterClass;
+  const accepted = [].filter.call(files, f => /\.(txt|md|markdown|pdf)$/i.test(f.name));
+  if (accepted.length === 0) { alert('Please select .txt, .md, or .pdf files.'); return; }
+  const newNotes = [];
+  for (let i = 0; i < accepted.length; i++) {
+    const file = accepted[i];
+    const baseName = file.name.replace(/\.[^.]+$/, '');
+    const title = (customTitles && customTitles[i] != null && String(customTitles[i]).trim()) ? String(customTitles[i]).trim() : (baseName || 'Untitled');
+    let content = '';
+    let tags = [];
+    if (/\.pdf$/i.test(file.name)) {
+      const noteId = uid();
+      await putPdf(noteId, file);
+      let searchText = '';
+      try {
+        const extractedText = await extractTextFromPdf(file);
+        if (extractedText && !extractedText.startsWith('[')) { tags = extractTagsFromText(extractedText); searchText = extractedText; }
+      } catch {}
+      newNotes.push({ id: noteId, title, body: '', domain: domain === 'all' ? 'general' : domain, class: targetClass, era: '', location: '', subject: '', tags, hasPdf: true, searchText, noteDate: new Date().toISOString().slice(0, 10), updatedAt: new Date().toISOString() });
+      continue;
+    }
+    content = await new Promise((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(String(reader.result)); reader.onerror = reject; reader.readAsText(file); });
+    if (content) tags = extractTagsFromText(content);
+    newNotes.push({ id: uid(), title, body: content, domain: domain === 'all' ? 'general' : domain, class: targetClass, era: '', location: '', subject: '', tags, noteDate: new Date().toISOString().slice(0, 10), updatedAt: new Date().toISOString() });
+  }
+  notes.push(...newNotes);
+  saveNotes(notes);
+  selectedId = newNotes[newNotes.length - 1]?.id ?? null;
+  const fromStart = pendingUploadFromView === 'start' || view === 'start';
+  pendingUploadFiles = [];
+  pendingUploadFromView = null;
+  if (fromStart) { filterDomain = domain === 'all' ? 'general' : domain; }
+  view = 'note-detail';
+  render();
+}
+
+const app = document.getElementById('app');
+
+function escapeHtml(s) {
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function escapeAttr(s) {
+  return escapeHtml(s).replace(/\r?\n/g, '&#10;');
+}
+
+function formatDate(iso) {
+  try {
+    return new Date(iso).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+  } catch {
+    return '';
+  }
+}
+function formatNoteDate(ymd) {
+  if (!ymd) return '';
+  try {
+    const [y, m, d] = ymd.split('-').map(Number);
+    return new Date(y, m - 1, d).toLocaleDateString(undefined, { dateStyle: 'medium' });
+  } catch { return ymd; }
+}
+function rerenderWithInputFocus(inputId, caretPos) {
+  render();
+  queueMicrotask(() => {
+    const el = document.getElementById(inputId);
+    if (!el) return;
+    el.focus();
+    if (typeof caretPos === 'number' && typeof el.setSelectionRange === 'function') {
+      const p = Math.min(caretPos, el.value.length);
+      el.setSelectionRange(p, p);
+    }
+  });
+}
+function syncGlobalSideMenu() {
+  let navLeft = document.getElementById('global-nav-left');
+  let menu = document.getElementById('global-side-menu');
+  let input = document.getElementById('global-upload-files');
+  if (!navLeft) {
+    navLeft = document.createElement('div');
+    navLeft.id = 'global-nav-left';
+    navLeft.className = 'global-nav-left';
+    navLeft.innerHTML = `
+      <button type="button" class="menu-logo-btn" id="nav-home" title="Home"><span class="menu-logo-title">Strata</span><span class="menu-logo-sub">Home</span></button>
+      <button type="button" class="btn btn-ghost nav-back-btn" id="nav-back" title="Back" aria-label="Back">←</button>
+    `;
+    document.body.appendChild(navLeft);
+    document.getElementById('nav-home')?.addEventListener('click', () => {
+      view = 'start';
+      render();
+    });
+    document.getElementById('nav-back')?.addEventListener('click', () => {
+      goBackByHierarchy();
+      render();
+    });
+  }
+  if (!menu) {
+    menu = document.createElement('div');
+    menu.id = 'global-side-menu';
+    menu.className = 'global-side-menu';
+    menu.innerHTML = `
+      <button type="button" class="btn btn-ghost" id="menu-settings">Settings</button>
+      <button type="button" class="btn btn-ghost" id="menu-backup">Save backup</button>
+      <button type="button" class="btn btn-primary" id="menu-upload">Upload notes</button>
+    `;
+    document.body.appendChild(menu);
+    document.getElementById('menu-settings')?.addEventListener('click', () => {
+      settingsFromView = view === 'app' ? 'app' : 'start';
+      view = 'settings';
+      render();
+    });
+    document.getElementById('menu-backup')?.addEventListener('click', async () => {
+      await saveBackupToChosenFile();
+    });
+    document.getElementById('menu-upload')?.addEventListener('click', () => {
+      document.getElementById('global-upload-files')?.click();
+    });
+  }
+  const backBtn = document.getElementById('nav-back');
+  if (backBtn) backBtn.disabled = view === 'start';
+  if (!input) {
+    input = document.createElement('input');
+    input.id = 'global-upload-files';
+    input.type = 'file';
+    input.className = 'hidden-input';
+    input.accept = '.txt,.md,.markdown,.pdf,text/plain,text/markdown,application/pdf';
+    input.multiple = true;
+    input.addEventListener('change', e => {
+      const files = [].filter.call(e.target.files || [], f => /\.(txt|md|markdown|pdf)$/i.test(f.name));
+      if (files.length === 0) { e.target.value = ''; return; }
+      pendingUploadFiles = files;
+      pendingUploadFromView = view === 'app' ? 'app' : 'start';
+      view = 'upload-preview';
+      e.target.value = '';
+      render();
+    });
+    document.body.appendChild(input);
+  }
+}
+
+function render() {
+  syncGlobalSideMenu();
+  if (classGridObjectUrls.length) {
+    classGridObjectUrls.forEach(u => URL.revokeObjectURL(u));
+    classGridObjectUrls = [];
+  }
+  if (view === 'start') {
+    app.innerHTML = `
+      <div class="start-screen">
+        <div class="start-brand">
+          <h1>Strata</h1>
+          <p>Notes for History, Earth, and everything between.</p>
+          <div class="strata-strip" aria-hidden="true"><span class="s1"></span><span class="s2"></span><span class="s3"></span><span class="s4"></span><span class="s5"></span></div>
+        </div>
+        <div class="start-global-search">
+          <input type="search" id="start-global-search" class="pick-search" placeholder="Search" autocomplete="off" />
+          <div id="start-global-results" class="start-global-results"></div>
+        </div>
+        <p class="start-prompt">Where would you like to go?</p>
+        <div class="start-upload">
+          <button type="button" class="btn btn-primary" id="start-upload">Upload notes</button>
+          <input type="file" id="start-upload-files" class="hidden-input" accept=".txt,.md,.markdown,.pdf,text/plain,text/markdown,application/pdf" multiple />
+          <span class="start-upload-hint">.txt, .md, or .pdf</span>
+        </div>
+        <div class="start-choices">
+          <button type="button" class="start-card start-card-history" data-domain="history">
+            <span class="start-card-title">History</span>
+          </button>
+          <button type="button" class="start-card start-card-geo" data-domain="geoscience">
+            <span class="start-card-title">Geoscience</span>
+          </button>
+          <button type="button" class="start-card start-card-misc" data-domain="general">
+            <span class="start-card-title">Misc</span>
+          </button>
+        </div>
+      </div>
+    `;
+    document.querySelectorAll('.start-card').forEach(btn => {
+      btn.addEventListener('click', () => { filterDomain = btn.getAttribute('data-domain') || 'general'; view = filterDomain === 'history' ? 'history-pick' : filterDomain === 'geoscience' ? 'geo-pick' : 'misc-pick'; render(); });
+    });
+    const startSearchEl = document.getElementById('start-global-search');
+    const startResultsEl = document.getElementById('start-global-results');
+    const drawStartResults = () => {
+      if (!startResultsEl || !startSearchEl) return;
+      const q = startSearchEl.value.trim();
+      if (!q) { startResultsEl.innerHTML = ''; return; }
+      const domainLabel = { history: 'History', geoscience: 'Geoscience', general: 'Misc' };
+      const results = globalSearchNotes(q).slice(0, 12);
+      startResultsEl.innerHTML = results.length === 0
+        ? '<p class="empty-pick">No notes found.</p>'
+        : results.map(n => `<button type="button" class="start-result" data-note-id="${escapeAttr(n.id)}"><span class="start-result-title">${escapeHtml(n.title || 'Untitled')}</span><span class="start-result-meta">${escapeHtml(domainLabel[n.domain])}${n.class ? ` • ${escapeHtml(n.class)}` : ''}${n.noteDate ? ` • ${escapeHtml(formatNoteDate(n.noteDate))}` : ''}</span></button>`).join('');
+      startResultsEl.querySelectorAll('.start-result[data-note-id]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          selectedId = btn.getAttribute('data-note-id');
+          editorEditing = true;
+          filterDomain = 'all';
+          filterClass = '';
+          filterEra = '';
+          filterLocation = '';
+          filterSubject = '';
+          filterNoteDate = '';
+          searchQuery = '';
+          view = 'note-detail';
+          render();
+        });
+      });
+    };
+    startSearchEl?.addEventListener('input', drawStartResults);
+    document.getElementById('start-upload')?.addEventListener('click', () => document.getElementById('start-upload-files')?.click());
+    document.getElementById('start-upload-files')?.addEventListener('change', e => {
+      const files = [].filter.call(e.target.files || [], f => /\.(txt|md|markdown|pdf)$/i.test(f.name));
+      if (files.length === 0) { alert('Please select .txt, .md, or .pdf files.'); e.target.value = ''; return; }
+      pendingUploadFiles = files;
+      pendingUploadFromView = 'start';
+      view = 'upload-preview';
+      e.target.value = '';
+      render();
+    });
+    return;
+  }
+
+  if (view === 'history-pick') {
+    const allClasses = classesForDomain('history');
+    const searchVal = (document.getElementById('pick-class-search')?.value || '').trim().toLowerCase();
+    const filtered = searchVal ? allClasses.filter(c => c.toLowerCase().includes(searchVal)) : allClasses;
+    app.innerHTML = `
+      <div class="start-screen">
+        <div class="start-brand"><h1>History</h1><p>Search or click a class</p></div>
+        <div class="pick-form pick-form-class">
+          <div class="pick-field"><input type="search" id="pick-class-search" class="pick-search" placeholder="Search classes…" value="${escapeAttr(searchVal)}" autocomplete="off" /></div>
+          <div class="class-list" id="history-class-list">${filtered.length === 0 ? '<p class="empty-pick">No matching classes. Add classes in Settings.</p>' : filtered.map(c=>`<button type="button" class="class-chip" data-class="${escapeAttr(c)}">${classLabelHtml(c)}</button>`).join('')}</div>
+          <div class="pick-actions"><button type="button" class="btn btn-primary" id="pick-view-notes">View notes</button><button type="button" class="btn btn-ghost" id="pick-view-all">View all</button></div>
+        </div>
+      </div>
+    `;
+    document.getElementById('pick-class-search')?.addEventListener('input', e => { rerenderWithInputFocus('pick-class-search', e.target.selectionStart); });
+    document.querySelectorAll('#history-class-list .class-chip').forEach(btn => { btn.addEventListener('click', () => { filterClass = btn.getAttribute('data-class') || ''; view = 'class-grid'; render(); }); });
+    document.getElementById('pick-view-notes')?.addEventListener('click', () => { filterClass = (document.getElementById('pick-class-search')?.value || '').trim(); view = 'class-grid'; render(); });
+    document.getElementById('pick-view-all')?.addEventListener('click', () => { filterClass = ''; filterEra = ''; filterNoteDate = ''; view = 'class-grid'; render(); });
+    return;
+  }
+
+  if (view === 'geo-pick') {
+    const allClasses = classesForDomain('geoscience');
+    const searchVal = (document.getElementById('pick-class-search')?.value || '').trim().toLowerCase();
+    const filtered = searchVal ? allClasses.filter(c => c.toLowerCase().includes(searchVal)) : allClasses;
+    app.innerHTML = `
+      <div class="start-screen">
+        <div class="start-brand"><h1>Geoscience</h1><p>Search or click a class</p></div>
+        <div class="pick-form pick-form-class">
+          <div class="pick-field"><input type="search" id="pick-class-search" class="pick-search" placeholder="Search classes…" value="${escapeAttr(searchVal)}" autocomplete="off" /></div>
+          <div class="class-list" id="geo-class-list">${filtered.length === 0 ? '<p class="empty-pick">No matching classes. Add classes in Settings.</p>' : filtered.map(c=>`<button type="button" class="class-chip" data-class="${escapeAttr(c)}">${classLabelHtml(c)}</button>`).join('')}</div>
+          <div class="pick-actions"><button type="button" class="btn btn-primary" id="pick-view-notes-geo">View notes</button><button type="button" class="btn btn-ghost" id="pick-view-all-geo">View all</button></div>
+        </div>
+      </div>
+    `;
+    document.getElementById('pick-class-search')?.addEventListener('input', e => { rerenderWithInputFocus('pick-class-search', e.target.selectionStart); });
+    document.querySelectorAll('#geo-class-list .class-chip').forEach(btn => { btn.addEventListener('click', () => { filterClass = btn.getAttribute('data-class') || ''; view = 'class-grid'; render(); }); });
+    document.getElementById('pick-view-notes-geo')?.addEventListener('click', () => { filterClass = (document.getElementById('pick-class-search')?.value || '').trim(); view = 'class-grid'; render(); });
+    document.getElementById('pick-view-all-geo')?.addEventListener('click', () => { filterClass = ''; filterSubject = ''; filterNoteDate = ''; view = 'class-grid'; render(); });
+    return;
+  }
+
+  if (view === 'class-grid') {
+    const classLabel = filterClass || 'All classes';
+    const classPdfNotes = notes
+      .filter(n =>
+        n.hasPdf &&
+        n.domain === filterDomain &&
+        (!filterClass || String(n.class || '').toLowerCase() === String(filterClass || '').toLowerCase())
+      )
+      .sort((a, b) => parseNoteDateValue(a).localeCompare(parseNoteDateValue(b)));
+    app.innerHTML = `
+      <div class="start-screen class-grid-screen">
+        <div class="class-grid-head">
+          <h1 class="start-card-title">${classLabelHtml(classLabel)}</h1>
+          <p class="start-card-desc">${classPdfNotes.length} PDF note${classPdfNotes.length === 1 ? '' : 's'}</p>
+        </div>
+        <div class="class-grid-actions"></div>
+        ${classPdfNotes.length === 0 ? '<p class="empty-pick">No uploaded PDFs in this class yet.</p>' : `
+          <div class="pdf-grid">
+            ${classPdfNotes.map(n => `
+              <button type="button" class="pdf-card" data-note-id="${escapeAttr(n.id)}">
+                <div class="pdf-card-preview" data-note-id="${escapeAttr(n.id)}"><div class="pdf-loading">Loading preview...</div></div>
+                <span class="pdf-card-title">${escapeHtml(n.title || 'Untitled')}</span>
+                <span class="pdf-card-date">${escapeHtml(formatNoteDate(n.noteDate || ''))}</span>
+              </button>
+            `).join('')}
+          </div>
+        `}
+      </div>
+    `;
+    document.querySelectorAll('.pdf-card[data-note-id]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        selectedId = btn.getAttribute('data-note-id');
+        editorEditing = true;
+        view = 'note-detail';
+        render();
+      });
+    });
+    document.querySelectorAll('.pdf-card-preview[data-note-id]').forEach(preview => {
+      const noteId = preview.getAttribute('data-note-id');
+      getPdf(noteId).then(blob => {
+        if (!blob || view !== 'class-grid') return;
+        const url = URL.createObjectURL(blob);
+        classGridObjectUrls.push(url);
+        preview.innerHTML = `<embed class="pdf-card-embed" type="application/pdf" src="${url}" />`;
+      }).catch(() => {
+        preview.innerHTML = `<div class="pdf-loading">Preview unavailable</div>`;
+      });
+    });
+    return;
+  }
+
+  if (view === 'note-detail') {
+    const current = selectedNote();
+    if (!current) {
+      view = 'start';
+      render();
+      return;
+    }
+    const domainLabel = { history: 'History', geoscience: 'Geoscience', general: 'Misc' };
+    const classOptions = [...new Set([...(classesForDomain(current.domain) || []), current.class || ''])].filter(Boolean);
+    app.innerHTML = `
+      <div class="start-screen note-detail-screen">
+        <div class="note-detail-wrap">
+          <div class="editor-header">
+            <input class="title-input" id="detail-title" type="text" value="${escapeAttr(current.title || 'Untitled')}" ${!editorEditing ? 'readonly' : ''} />
+            <div class="editor-actions">
+              <button type="button" class="btn btn-ghost" id="detail-edit">${editorEditing ? 'Done' : 'Edit'}</button>
+              ${editorEditing ? '<button type="button" class="btn btn-primary" id="detail-save">Save</button>' : ''}
+            </div>
+          </div>
+          <div class="meta-grid">
+            <div class="field"><label>Domain</label><select id="detail-domain" ${!editorEditing ? 'disabled' : ''}><option value="history" ${current.domain==='history'?'selected':''}>History</option><option value="geoscience" ${current.domain==='geoscience'?'selected':''}>Geoscience</option><option value="general" ${current.domain==='general'?'selected':''}>Misc</option></select></div>
+            <div class="field"><label>Class</label><select id="detail-class" ${!editorEditing ? 'disabled' : ''}>${classOptions.map(c => `<option value="${escapeAttr(c)}" ${c === (current.class || '') ? 'selected' : ''}>${escapeHtml(c)}</option>`).join('')}</select></div>
+            <div class="field"><label>Era</label><input id="detail-era" type="text" value="${escapeAttr(current.era || '')}" ${!editorEditing ? 'readonly' : ''} /></div>
+            <div class="field"><label>Location</label><input id="detail-location" type="text" value="${escapeAttr(current.location || '')}" ${!editorEditing ? 'readonly' : ''} /></div>
+            <div class="field"><label>Subject / Chapter</label><input id="detail-subject" type="text" value="${escapeAttr(current.subject || '')}" ${!editorEditing ? 'readonly' : ''} /></div>
+            <div class="field field-tags"><label>Tags</label><input id="detail-tags" type="text" value="${escapeAttr(formatTags(current.tags || []))}" ${!editorEditing ? 'readonly' : ''} /></div>
+            <div class="field"><label>Date taken</label><input id="detail-note-date" type="date" value="${escapeAttr(current.noteDate || '')}" ${!editorEditing ? 'readonly' : ''} /></div>
+          </div>
+          ${current.hasPdf ? `<div class="pdf-viewer-wrap"><div class="pdf-loading" id="pdf-loading">Loading PDF…</div><embed id="pdf-embed" class="pdf-embed" type="application/pdf" style="display:none" /></div>` : `<textarea class="body-input" readonly>${escapeHtml(current.body || '')}</textarea>`}
+        </div>
+      </div>
+    `;
+    document.getElementById('detail-edit')?.addEventListener('click', () => {
+      editorEditing = !editorEditing;
+      render();
+    });
+    document.getElementById('detail-save')?.addEventListener('click', () => {
+      const patch = {
+        id: current.id,
+        title: document.getElementById('detail-title')?.value ?? current.title,
+        domain: document.getElementById('detail-domain')?.value ?? current.domain,
+        class: document.getElementById('detail-class')?.value ?? '',
+        era: document.getElementById('detail-era')?.value ?? '',
+        location: document.getElementById('detail-location')?.value ?? '',
+        subject: document.getElementById('detail-subject')?.value ?? '',
+        tags: parseTags(document.getElementById('detail-tags')?.value ?? ''),
+        noteDate: document.getElementById('detail-note-date')?.value ?? '',
+      };
+      upsertNote(patch);
+      editorEditing = false;
+      render();
+    });
+    if (current.hasPdf) {
+      if (lastPdfObjectUrl) { URL.revokeObjectURL(lastPdfObjectUrl); lastPdfObjectUrl = null; }
+      getPdf(current.id).then(blob => {
+        if (!blob || selectedId !== current.id || view !== 'note-detail') return;
+        const url = URL.createObjectURL(blob);
+        lastPdfObjectUrl = url;
+        const embed = document.getElementById('pdf-embed');
+        const loading = document.getElementById('pdf-loading');
+        if (embed) { embed.src = url; embed.style.display = 'block'; }
+        if (loading) loading.style.display = 'none';
+      });
+    }
+    return;
+  }
+
+  if (view === 'settings') {
+    const custom = loadCustomClasses();
+    const historyClasses = [...new Set(['Issues in European History II (HIS 1120)', ...(custom.history || [])])];
+    const geoClasses = [...new Set(['Earth Revealed (GEO 1600)', ...(custom.geoscience || [])])];
+    const miscClasses = custom.general || [];
+    const chipHtml = (c, domain) => `<span class="class-chip-wrap"><span class="class-chip class-chip-settings">${classLabelHtml(c)}</span><button type="button" class="class-chip-delete" data-class="${escapeAttr(c)}" data-domain="${domain}" title="Remove">×</button></span>`;
+    app.innerHTML = `
+      <div class="start-screen">
+        <div class="start-brand"><h1>Settings</h1><p>Manage your classes</p></div>
+        <div class="settings-form">
+          <div class="settings-section">
+            <h2 class="settings-section-title">History classes</h2>
+            <div class="settings-class-list">${historyClasses.length ? historyClasses.map(c=>chipHtml(c,'history')).join('') : '<p class="empty-pick">No custom classes yet.</p>'}</div>
+            <div class="add-class-row add-class-inner"><input type="text" id="settings-add-history-emoji" class="pick-search" placeholder="Emoji" /><input type="text" id="settings-add-history-name" class="pick-search" placeholder="Class name" /><input type="text" id="settings-add-history-code" class="pick-search" placeholder="Class code" /><select id="settings-add-history-year" class="pick-search"><option value="">Year</option><option value="Freshman">Freshman</option><option value="Sophomore">Sophomore</option><option value="Junior">Junior</option><option value="Senior">Senior</option></select><button type="button" class="btn btn-ghost" id="settings-add-btn-history">Add</button></div>
+          </div>
+          <div class="settings-section">
+            <h2 class="settings-section-title">Geoscience classes</h2>
+            <div class="settings-class-list">${geoClasses.length ? geoClasses.map(c=>chipHtml(c,'geoscience')).join('') : '<p class="empty-pick">No custom classes yet.</p>'}</div>
+            <div class="add-class-row add-class-inner"><input type="text" id="settings-add-geo-emoji" class="pick-search" placeholder="Emoji" /><input type="text" id="settings-add-geo-name" class="pick-search" placeholder="Class name" /><input type="text" id="settings-add-geo-code" class="pick-search" placeholder="Class code" /><select id="settings-add-geo-year" class="pick-search"><option value="">Year</option><option value="Freshman">Freshman</option><option value="Sophomore">Sophomore</option><option value="Junior">Junior</option><option value="Senior">Senior</option></select><button type="button" class="btn btn-ghost" id="settings-add-btn-geo">Add</button></div>
+          </div>
+          <div class="settings-section">
+            <h2 class="settings-section-title">Misc classes</h2>
+            <div class="settings-class-list">${miscClasses.length ? miscClasses.map(c=>chipHtml(c,'general')).join('') : '<p class="empty-pick">No custom classes yet.</p>'}</div>
+            <div class="add-class-row add-class-inner"><input type="text" id="settings-add-misc-emoji" class="pick-search" placeholder="Emoji" /><input type="text" id="settings-add-misc-name" class="pick-search" placeholder="Class name" /><input type="text" id="settings-add-misc-code" class="pick-search" placeholder="Class code" /><select id="settings-add-misc-year" class="pick-search"><option value="">Year</option><option value="Freshman">Freshman</option><option value="Sophomore">Sophomore</option><option value="Junior">Junior</option><option value="Senior">Senior</option></select><button type="button" class="btn btn-ghost" id="settings-add-btn-misc">Add</button></div>
+          </div>
+          <div class="pick-actions"></div>
+        </div>
+      </div>
+    `;
+    document.getElementById('settings-add-btn-history')?.addEventListener('click', () => {
+      const emojiEl = document.getElementById('settings-add-history-emoji');
+      const nameEl = document.getElementById('settings-add-history-name');
+      const codeEl = document.getElementById('settings-add-history-code');
+      const yearEl = document.getElementById('settings-add-history-year');
+      const label = buildClassLabel(nameEl?.value, codeEl?.value, emojiEl?.value, yearEl?.value);
+      if (label) { addCustomClass('history', label); if (emojiEl) emojiEl.value = ''; if (nameEl) nameEl.value = ''; if (codeEl) codeEl.value = ''; if (yearEl) yearEl.value = ''; render(); }
+    });
+    document.getElementById('settings-add-btn-geo')?.addEventListener('click', () => {
+      const emojiEl = document.getElementById('settings-add-geo-emoji');
+      const nameEl = document.getElementById('settings-add-geo-name');
+      const codeEl = document.getElementById('settings-add-geo-code');
+      const yearEl = document.getElementById('settings-add-geo-year');
+      const label = buildClassLabel(nameEl?.value, codeEl?.value, emojiEl?.value, yearEl?.value);
+      if (label) { addCustomClass('geoscience', label); if (emojiEl) emojiEl.value = ''; if (nameEl) nameEl.value = ''; if (codeEl) codeEl.value = ''; if (yearEl) yearEl.value = ''; render(); }
+    });
+    document.getElementById('settings-add-btn-misc')?.addEventListener('click', () => {
+      const emojiEl = document.getElementById('settings-add-misc-emoji');
+      const nameEl = document.getElementById('settings-add-misc-name');
+      const codeEl = document.getElementById('settings-add-misc-code');
+      const yearEl = document.getElementById('settings-add-misc-year');
+      const label = buildClassLabel(nameEl?.value, codeEl?.value, emojiEl?.value, yearEl?.value);
+      if (label) { addCustomClass('general', label); if (emojiEl) emojiEl.value = ''; if (nameEl) nameEl.value = ''; if (codeEl) codeEl.value = ''; if (yearEl) yearEl.value = ''; render(); }
+    });
+    document.querySelectorAll('.settings-form .class-chip-delete').forEach(btn => { btn.addEventListener('click', () => { removeCustomClass(btn.getAttribute('data-domain'), btn.getAttribute('data-class')); render(); }); });
+    return;
+  }
+
+  if (view === 'misc-pick') {
+    filterDomain = 'general';
+    const allClasses = classesForDomain('general');
+    const searchVal = (document.getElementById('pick-class-search')?.value || '').trim().toLowerCase();
+    const filtered = searchVal ? allClasses.filter(c => c.toLowerCase().includes(searchVal)) : allClasses;
+    app.innerHTML = `
+      <div class="start-screen">
+        <div class="start-brand"><h1>Misc</h1><p>Search or click a class</p></div>
+        <div class="pick-form pick-form-class">
+          <div class="pick-field"><input type="search" id="pick-class-search" class="pick-search" placeholder="Search classes…" value="${escapeAttr(searchVal)}" autocomplete="off" /></div>
+          <div class="class-list" id="misc-class-list">${filtered.length === 0 ? '<p class="empty-pick">No matching classes. Add classes in Settings.</p>' : filtered.map(c=>`<button type="button" class="class-chip" data-class="${escapeAttr(c)}">${classLabelHtml(c)}</button>`).join('')}</div>
+          <div class="pick-actions"><button type="button" class="btn btn-primary" id="pick-view-notes-misc">View notes</button><button type="button" class="btn btn-ghost" id="pick-view-all-misc">View all</button></div>
+        </div>
+      </div>
+    `;
+    document.getElementById('pick-class-search')?.addEventListener('input', e => { rerenderWithInputFocus('pick-class-search', e.target.selectionStart); });
+    document.querySelectorAll('#misc-class-list .class-chip').forEach(btn => { btn.addEventListener('click', () => { filterClass = btn.getAttribute('data-class') || ''; view = 'class-grid'; render(); }); });
+    document.getElementById('pick-view-notes-misc')?.addEventListener('click', () => { filterClass = (document.getElementById('pick-class-search')?.value || '').trim(); view = 'class-grid'; render(); });
+    document.getElementById('pick-view-all-misc')?.addEventListener('click', () => { filterClass = ''; filterNoteDate = ''; view = 'class-grid'; render(); });
+    return;
+  }
+
+  if (view === 'upload-preview' && pendingUploadFiles.length) {
+    app.innerHTML = `
+      <div class="start-screen">
+        <div class="start-brand"><h1>Name your uploads</h1><p>Set a title for each note</p></div>
+        <div class="pick-form upload-preview-form">
+          ${pendingUploadFiles.map((f, i) => {
+            const baseName = f.name.replace(/\.[^.]+$/, '') || 'Untitled';
+            return `<div class="upload-preview-row"><span class="upload-preview-filename">${escapeHtml(f.name)}</span><input type="text" id="upload-title-${i}" class="pick-search" placeholder="Title" value="${escapeAttr(baseName)}" /></div>`;
+          }).join('')}
+          <div class="pick-actions">
+            <button type="button" class="btn btn-primary" id="upload-confirm">Upload notes</button>
+            <button type="button" class="btn btn-ghost" id="upload-cancel">Cancel</button>
+          </div>
+        </div>
+      </div>
+    `;
+    document.getElementById('upload-confirm')?.addEventListener('click', async () => {
+      const titles = pendingUploadFiles.map((_, i) => (document.getElementById(`upload-title-${i}`)?.value || '').trim());
+      try {
+        await importFromFiles(pendingUploadFiles, titles);
+      } catch (err) { alert('Upload failed: ' + (err.message || err)); }
+    });
+    document.getElementById('upload-cancel')?.addEventListener('click', () => {
+      pendingUploadFiles = [];
+      view = pendingUploadFromView || 'start';
+      pendingUploadFromView = null;
+      render();
+    });
+    return;
+  }
+
+  if (view === 'app') {
+    if (!selectedId && notes.length) selectedId = notes[0].id;
+    view = selectedId ? 'note-detail' : 'start';
+    render();
+    return;
+  }
+
+  const list = filteredNotes();
+  const current = selectedNote();
+
+  if (selectedId && !notes.some(n => n.id === selectedId)) selectedId = list[0]?.id ?? null;
+  if (!selectedId && list.length) selectedId = list[0].id;
+
+  const domainLabel = { history: 'History', geoscience: 'Geoscience', general: 'General' };
+  const classes = filterDomain === 'history' ? classesForDomain('history') : filterDomain === 'geoscience' ? classesForDomain('geoscience') : [...new Set([...(DEFAULT_CLASSES.history||[]), ...(DEFAULT_CLASSES.geoscience||[]), ...(DEFAULT_CLASSES.general||[]), ...uniqueValues('class')])].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+  const locations = uniqueValues('location');
+  const subjects = uniqueValues('subject');
+
+  app.innerHTML = `
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="brand brand-clickable" id="go-home">
+          <h1>Strata</h1>
+          <p>Notes for History, Earth, and everything between.</p>
+          <div class="strata-strip" aria-hidden="true"><span class="s1"></span><span class="s2"></span><span class="s3"></span><span class="s4"></span><span class="s5"></span></div>
+        </div>
+        <div class="search-wrap"><input type="search" id="q" placeholder="Search notes…" value="${escapeAttr(searchQuery)}" autocomplete="off" /></div>
+        <div>
+          <p class="filter-label">Domain</p>
+          <div class="domain-filters" role="group" aria-label="Filter by domain">
+            ${['all','history','geoscience','general'].map(d => `<button type="button" class="${filterDomain===d?'active':''}" data-domain="${d}">${d==='all'?'All':domainLabel[d]}</button>`).join('')}
+          </div>
+        </div>
+        <div>
+          <p class="filter-label">Class</p>
+          <input type="text" id="filter-class" class="filter-input" list="datalist-class" placeholder="Filter by class…" value="${escapeAttr(filterClass)}" autocomplete="off" />
+          <datalist id="datalist-class">${classes.map(c => `<option value="${escapeAttr(c)}">`).join('')}</datalist>
+        </div>
+        <div>
+          <p class="filter-label">Date of notes taken</p>
+          <input type="date" id="filter-note-date" class="filter-input" value="${escapeAttr(filterNoteDate)}" />
+        </div>
+        ${filterDomain === 'history' ? `<div><p class="filter-label">Time</p><input type="text" id="filter-era" class="filter-input" list="datalist-era" placeholder="Filter by time…" value="${escapeAttr(filterEra)}" autocomplete="off" /><datalist id="datalist-era">${uniqueValues('era','history').map(e=>`<option value="${escapeAttr(e)}">`).join('')}</datalist></div><div><p class="filter-label">Location</p><input type="text" id="filter-location" class="filter-input" list="datalist-location" placeholder="Filter by location…" value="${escapeAttr(filterLocation)}" autocomplete="off" /><datalist id="datalist-location">${locations.map(loc => `<option value="${escapeAttr(loc)}">`).join('')}</datalist></div>` : ''}
+        ${filterDomain === 'geoscience' ? `<div><p class="filter-label">Subject / Chapter</p><input type="text" id="filter-subject" class="filter-input" list="datalist-subject" placeholder="Filter by subject…" value="${escapeAttr(filterSubject)}" autocomplete="off" /><datalist id="datalist-subject">${subjects.map(s => `<option value="${escapeAttr(s)}">`).join('')}</datalist></div>` : ''}
+        <ul class="note-list" id="note-list">
+          ${list.length === 0 ? '<li class="empty-state">No notes match. Try another filter or search.</li>' : list.map(n => {
+            const active = n.id === selectedId ? 'active' : '';
+            const preview = n.hasPdf ? '(PDF)' : n.body.replace(/\s+/g,' ').trim().slice(0,72);
+            const metaParts = [`<span class="badge ${n.domain}">${domainLabel[n.domain]}</span>`, n.noteDate ? `<span>${escapeHtml(formatNoteDate(n.noteDate))}</span>` : '', n.class ? `<span>${escapeHtml(n.class)}</span>` : '', n.domain === 'history' && (n.era || n.location) ? `<span>${escapeHtml([n.era,n.location].filter(Boolean).join(' · '))}</span>` : '', n.domain === 'geoscience' && n.subject ? `<span>${escapeHtml(n.subject)}</span>` : '', (n.tags||[]).length ? `<span class="tags-inline">${(n.tags||[]).map(t=>`<span class="tag-chip">${escapeHtml(t)}</span>`).join('')}</span>` : '', preview ? `<span class="preview">${escapeHtml(preview)}${!n.hasPdf&&n.body.length>72?'…':''}</span>` : ''].filter(Boolean);
+            return `<li><button type="button" class="${active}" data-id="${escapeAttr(n.id)}"><span class="title">${escapeHtml(n.title||'Untitled')}</span><span class="meta">${metaParts.join(' · ')}</span></button></li>`;
+          }).join('')}
+        </ul>
+        <div class="sidebar-actions">
+          <button type="button" class="btn btn-primary" id="upload-notes">Upload notes</button>
+          <button type="button" class="btn btn-ghost" id="new-note">New note</button>
+          <button type="button" class="btn btn-ghost" id="export">Export JSON</button>
+          <button type="button" class="btn btn-ghost" id="import">Import JSON</button>
+          <button type="button" class="btn btn-ghost" id="open-settings-sidebar">Settings</button>
+          <input type="file" id="upload-files" class="hidden-input" accept=".txt,.md,.markdown,.pdf,text/plain,text/markdown,application/pdf" multiple />
+          <input type="file" id="import-file" class="hidden-input" accept="application/json,.json" />
+        </div>
+      </aside>
+      <main class="main">
+        ${!current ? '<p class="empty-state">Create a note to get started, or import a backup.</p>' : `
+          <div class="editor-header">
+            <input class="title-input" id="title" type="text" value="${escapeAttr(current.title)}" placeholder="Title" ${!editorEditing?'readonly':''} />
+            <div class="editor-actions">
+              <button type="button" class="btn btn-ghost" id="editor-edit">${editorEditing ? 'Done' : 'Edit'}</button>
+              ${editorEditing ? '<button type="button" class="btn btn-primary" id="editor-save">Save</button>' : ''}
+              <button type="button" class="btn btn-danger" id="del">Delete</button>
+            </div>
+          </div>
+          <div class="meta-grid">
+            <div class="field"><label for="domain">Domain</label><select id="domain" ${!editorEditing?'disabled':''}><option value="history" ${current.domain==='history'?'selected':''}>History</option><option value="geoscience" ${current.domain==='geoscience'?'selected':''}>Geoscience</option><option value="general" ${current.domain==='general'?'selected':''}>General</option></select></div>
+            <div class="field"><label for="note-class">Class</label><select id="note-class" ${!editorEditing?'disabled':''}>${[...new Set([...(classes||[]), current.class||''])].filter(Boolean).map(c=>`<option value="${escapeAttr(c)}" ${c===current.class?'selected':''}>${escapeHtml(c)}</option>`).join('')}</select></div>
+            ${current.domain === 'history' ? `<div class="field"><label for="era">Era</label><input type="text" id="era" value="${escapeAttr(current.era)}" placeholder="e.g. 1350, Medieval, Early Modern" list="datalist-era" ${!editorEditing?'readonly':''} /><datalist id="datalist-era">${uniqueValues('era').map(e=>`<option value="${escapeAttr(e)}">`).join('')}</datalist></div><div class="field"><label for="location">Location</label><input type="text" id="location" value="${escapeAttr(current.location)}" placeholder="e.g. France, Venice, Oxford" list="datalist-editor-location" ${!editorEditing?'readonly':''} /><datalist id="datalist-editor-location">${locations.map(loc=>`<option value="${escapeAttr(loc)}">`).join('')}</datalist></div>` : ''}
+            ${current.domain === 'geoscience' ? `<div class="field"><label for="subject">Subject / Chapter</label><input type="text" id="subject" value="${escapeAttr(current.subject)}" placeholder="e.g. Petrology, Ch. 3" list="datalist-editor-subject" ${!editorEditing?'readonly':''} /><datalist id="datalist-editor-subject">${subjects.map(s=>`<option value="${escapeAttr(s)}">`).join('')}</datalist></div>` : ''}
+            <div class="field field-tags"><label for="tags">Tags</label><input type="text" id="tags" value="${escapeAttr(formatTags(current.tags))}" placeholder="e.g. primary-source, exam-review (comma-separated)" list="datalist-tags" ${!editorEditing?'readonly':''} /><datalist id="datalist-tags">${allTags().map(t=>`<option value="${escapeAttr(t)}">`).join('')}</datalist></div>
+            <div class="field"><label for="note-date">Date taken</label><input type="date" id="note-date" value="${escapeAttr(current.noteDate || '')}" ${!editorEditing?'readonly':''} /></div>
+          </div>
+          ${current.hasPdf ? `<div class="pdf-viewer-wrap" id="pdf-viewer-wrap"><div class="pdf-loading" id="pdf-loading">Loading PDF…</div><embed id="pdf-embed" class="pdf-embed" type="application/pdf" style="display:none" /></div>` : `<textarea class="body-input" id="body" placeholder="Write here — ideas, citations, sketches, questions…" ${!editorEditing?'readonly':''}></textarea>`}
+          <p class="saved-hint">${saveFlash ? 'Saved.' : `Last updated ${formatDate(current.updatedAt)}`}</p>
+        `}
+      </main>
+    </div>
+  `;
+
+  document.getElementById('upload-notes')?.addEventListener('click', () => document.getElementById('upload-files')?.click());
+  document.getElementById('upload-files')?.addEventListener('change', e => {
+    const files = [].filter.call(e.target.files || [], f => /\.(txt|md|markdown|pdf)$/i.test(f.name));
+    if (files.length === 0) { alert('Please select .txt, .md, or .pdf files.'); e.target.value = ''; return; }
+    pendingUploadFiles = files;
+    pendingUploadFromView = 'app';
+    view = 'upload-preview';
+    e.target.value = '';
+    render();
+  });
+  document.getElementById('go-home')?.addEventListener('click', () => { view = 'start'; render(); });
+  document.getElementById('open-settings-sidebar')?.addEventListener('click', () => { settingsFromView = 'app'; view = 'settings'; render(); });
+  document.getElementById('q')?.addEventListener('input', e => { searchQuery = e.target.value; rerenderWithInputFocus('q', e.target.selectionStart); });
+  document.getElementById('filter-era')?.addEventListener('input', e => { filterEra = e.target.value; rerenderWithInputFocus('filter-era', e.target.selectionStart); });
+  document.querySelectorAll('.domain-filters button').forEach(btn => btn.addEventListener('click', () => { filterDomain = btn.getAttribute('data-domain') || 'all'; render(); }));
+  document.getElementById('filter-class')?.addEventListener('input', e => { filterClass = e.target.value; rerenderWithInputFocus('filter-class', e.target.selectionStart); });
+  document.getElementById('filter-note-date')?.addEventListener('input', e => { filterNoteDate = e.target.value || ''; render(); });
+  document.getElementById('filter-location')?.addEventListener('input', e => { filterLocation = e.target.value; rerenderWithInputFocus('filter-location', e.target.selectionStart); });
+  document.getElementById('filter-subject')?.addEventListener('input', e => { filterSubject = e.target.value; rerenderWithInputFocus('filter-subject', e.target.selectionStart); });
+  document.querySelectorAll('#note-list button[data-id]').forEach(btn => btn.addEventListener('click', () => { selectedId = btn.getAttribute('data-id'); saveFlash = false; editorEditing = false; render(); }));
+
+  document.getElementById('new-note')?.addEventListener('click', () => {
+    const id = uid();
+    const domain = filterDomain === 'all' ? 'general' : filterDomain;
+    upsertNote({ id, title: '', body: '', domain, class: '', era: '', location: '', subject: '', tags: [], noteDate: new Date().toISOString().slice(0, 10) });
+    selectedId = id; saveFlash = false; editorEditing = true; render();
+    queueMicrotask(() => document.getElementById('title')?.focus());
+  });
+  document.getElementById('editor-edit')?.addEventListener('click', () => { editorEditing = !editorEditing; render(); });
+  document.getElementById('editor-save')?.addEventListener('click', () => { persistFromEditor(); editorEditing = false; render(); });
+
+  document.getElementById('export')?.addEventListener('click', () => exportJson());
+  document.getElementById('import')?.addEventListener('click', () => document.getElementById('import-file')?.click());
+  document.getElementById('import-file')?.addEventListener('change', async e => { const f = e.target.files?.[0]; if (f) await importJson(f); e.target.value = ''; });
+
+  const titleEl = document.getElementById('title');
+  const domainEl = document.getElementById('domain');
+  const classEl = document.getElementById('note-class');
+  const eraEl = document.getElementById('era');
+  const locationEl = document.getElementById('location');
+  const subjectEl = document.getElementById('subject');
+  const tagsEl = document.getElementById('tags');
+  const noteDateEl = document.getElementById('note-date');
+  const bodyEl = document.getElementById('body');
+  if (bodyEl && current && !current.hasPdf) bodyEl.value = current.body;
+  if (current?.hasPdf) {
+    if (lastPdfObjectUrl) { URL.revokeObjectURL(lastPdfObjectUrl); lastPdfObjectUrl = null; }
+    getPdf(current.id).then(blob => {
+      if (!blob || selectedId !== current.id) return;
+      const url = URL.createObjectURL(blob);
+      lastPdfObjectUrl = url;
+      const embed = document.getElementById('pdf-embed');
+      const loading = document.getElementById('pdf-loading');
+      if (embed) { embed.src = url; embed.style.display = 'block'; }
+      if (loading) loading.style.display = 'none';
+    });
+  }
+
+  function persistFromEditor() {
+    if (!current || !titleEl || !domainEl) return;
+    const d = domainEl.value;
+    const patch = { id: current.id, title: titleEl.value, domain: d, class: classEl?.value ?? '', tags: parseTags(tagsEl?.value ?? ''), noteDate: noteDateEl?.value ?? '' };
+    if (bodyEl) patch.body = bodyEl.value;
+    if (d === 'history') { patch.era = eraEl?.value ?? ''; patch.location = locationEl?.value ?? ''; }
+    if (d === 'geoscience') patch.subject = subjectEl?.value ?? '';
+    upsertNote(patch);
+    saveFlash = true;
+    const hint = document.querySelector('.saved-hint');
+    if (hint) hint.textContent = 'Saved.';
+  }
+
+  function onMaybeLeaveEditor() {
+    requestAnimationFrame(() => {
+      const a = document.activeElement;
+      if (a && a.closest('.main')) return;
+      render();
+    });
+  }
+
+  [titleEl, classEl, eraEl, locationEl, subjectEl, tagsEl, bodyEl, noteDateEl].filter(Boolean).forEach(el => { el.addEventListener('input', () => { if (editorEditing) persistFromEditor(); }); el.addEventListener('change', () => { if (editorEditing) persistFromEditor(); }); el.addEventListener('blur', onMaybeLeaveEditor); });
+  domainEl?.addEventListener('change', () => { if (editorEditing) { persistFromEditor(); render(); } });
+
+  document.getElementById('del')?.addEventListener('click', async () => {
+    if (!current) return;
+    if (confirm('Delete this note?')) { await deleteNote(current.id); saveFlash = false; render(); }
+  });
+}
+
+render();
+})();
+  </script>
+</body>
+</html>
